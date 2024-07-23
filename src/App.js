@@ -1,10 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { tempWatchedData, tempMovieData } from "./data/movieData.js";
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
+const KEY = "d0f6fa16";
+//www.omdbapi.com/?i=tt3896198&apikey=d0f6fa16
 export default function App() {
   const [movies, setMovies] = useState(tempMovieData);
   const [watched, setWatched] = useState(tempWatchedData);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    // Define an async function
+    setIsLoading(true);
+    const fetchMovies = async () => {
+      try{
+      const response = await fetch(
+        `http://www.omdbapi.com/?apikey=${KEY}&s='interstellar'`
+      );
+      if(!response.ok) throw new Error("Something Were Wrong With fetching movies")
+      const data = await response.json();
+    if(data.Response === "False") throw new Error(data.Error)
+      setMovies(data.Search);
+      // setIsLoading(false);
+    
+  }catch(err){
+    setError(err.message)
+    // setIsLoading(false)
+    console.error(err)
+  } finally{
+    setIsLoading(false)
+  }
+}
+    fetchMovies();
+  }, []);
+
   return (
     <>
       <NavBar>
@@ -14,7 +44,12 @@ export default function App() {
       </NavBar>
       <Main>
         <Box>
-          <MovieList movies={movies} />
+          {/* {isLoading ? <Loader/>: <MovieList movies={movies} />} */}
+          {isLoading && <Loader />}
+          {!isLoading && !error && <MovieList movies={movies} />}
+          {error && <ErrorMessage message={error}/>}
+
+          
         </Box>
         <Box>
           <MovieSummary watched={watched} />
@@ -23,6 +58,14 @@ export default function App() {
       </Main>
     </>
   );
+}
+function Loader(){
+  return <p className="loader">Loading...</p>
+}
+function ErrorMessage({message}){
+return <p className="error">
+  <span>⛔</span>{message}
+</p>
 }
 function NavBar({ children }) {
   return <nav className="nav-bar">{children}</nav>;
