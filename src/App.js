@@ -1,20 +1,23 @@
 import { useState, useEffect } from "react";
 import { tempWatchedData, tempMovieData } from "./data/movieData.js";
-import { StarRating } from "./StarRating.js";
+import StarRating from "./StarRating.js";
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 const KEY = "d0f6fa16";
 //www.omdbapi.com/?i=tt3896198&apikey=d0f6fa16
 export default function App() {
   const [movies, setMovies] = useState([]);
-  const [watched, setWatched] = useState([]);
-  const [query, setQuery] = useState("inception");
+  const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [selectedId, setSelectedId] = useState(null);
   // const tempQuery="interstellar"
+  // const [watched, setWatched] = useState([]);
+  const [watched, setWatched] = useState(() =>
+    JSON.parse(localStorage.getItem("watched"))
+  );
+
   function handleSelectMovie(id) {
-    console.log("here");
     setSelectedId((selectedId) => (id === selectedId ? null : id));
   }
   function handleCloseMovie() {
@@ -22,17 +25,31 @@ export default function App() {
   }
   function handleAddWatched(movie) {
     setWatched((watched) => [...watched, movie]);
+    // localStorage.setItem("watched", JSON.stringify([...watched, movie]));
   }
   function handleDeleteWatched(id) {
     setWatched((watched) => watched.filter((movie) => movie.imdbID !== id));
   }
+
   useEffect(() => {
+    localStorage.setItem("watched", JSON.stringify(watched));
+  }, [watched]);
+  // useEffect(() => {
+  //   const wm = localStorage.getItem("watched");
+  //   console.log(wm);
+  //   if (wm) {
+  //     setWatched(JSON.parse(wm));
+  //   }
+  // }, []);
+  useEffect(() => {
+    const controller = new AbortController();
     const fetchMovies = async () => {
       try {
         setIsLoading(true);
         setError("");
         const response = await fetch(
-          `http://www.omdbapi.com/?apikey=${KEY}&s=${query}&page=${1}`
+          `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`,
+          { signal: controller.signal }
         );
         if (!response.ok)
           throw new Error("Something Were Wrong With fetching movies");
@@ -40,9 +57,11 @@ export default function App() {
         if (data.Response === "False") throw new Error("Moive Not found");
         console.log(data.Search);
         setMovies(data.Search);
-        // setIsLoading(false);
+        setError("");
       } catch (err) {
-        setError(err.message);
+        if (err.name !== "AbortError") {
+          setError(err.message);
+        }
         // setIsLoading(false)
         console.error(err);
       } finally {
@@ -55,7 +74,11 @@ export default function App() {
       return;
       // setWatched([])
     }
+    handleCloseMovie();
     fetchMovies();
+    return function () {
+      controller.abort();
+    };
   }, [query]);
 
   return (
@@ -200,6 +223,7 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
   const watchedUserRating = watched.find(
     (movie) => movie.imdbID === selectedId
   )?.userRating;
+
   const {
     Title: title,
     Year: year,
@@ -221,7 +245,7 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
       imdbRating: Number(imdbRating),
       runtime: Number(runtime.split(" ").at(0)),
       userRating,
-      countRatingDecisions: countRef.current,
+      // countRatingDecisions: countRef.current,
     };
 
     onAddWatched(newWatchedMovie);
@@ -339,11 +363,11 @@ function MovieSummary({ watched }) {
         </p>
         <p>
           <span>⭐️</span>
-          <span>{avgImdbRating.toFixed(2)}</span>
+          <span>{Number(avgImdbRating.toFixed(2))}</span>
         </p>
         <p>
           <span>🌟</span>
-          <span>{avgUserRating.toFixed(2)}</span>
+          <span>{Number(avgUserRating.toFixed(2))}</span>
         </p>
         <p>
           <span>⏳</span>
@@ -367,6 +391,7 @@ function WatchedMoviesList({ watched, onDeleteWatched }) {
   );
 }
 function WatchedMovie({ movie, onDeleteWatched }) {
+  // localStorage.getItem("watched");
   return (
     <li>
       <img src={movie.poster} alt={`${movie.title} poster`} />

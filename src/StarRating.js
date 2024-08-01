@@ -6,13 +6,13 @@ export default function StarRating({
   className = "",
   messages = [],
   defaultRating = 0,
-  onSetMovieRating,
+  onSetRating,
 }) {
   const [rating, setRating] = useState(defaultRating);
   const [tempRating, setTempRating] = useState(0);
   function handleRating(rating) {
     setRating(rating);
-    onSetMovieRating(rating);
+    onSetRating(rating);
   }
   const containerStyle = {
     display: "flex",
