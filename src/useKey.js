@@ -3,13 +3,14 @@ export function useKey(key, action) {
   useEffect(
     function () {
       function callback(e) {
-        if (e.code.toLowerString() === key.toLowerString()) {
+        if (e.code.toLowerCase() === key.toLowerCase()) {
           action();
         }
       }
-      document.addEventListener(key, callback);
-      return () => document.removeEventListener(key, callback);
+      document.addEventListener("keydown", callback);
+      return () => document.removeEventListener("keydown", callback);
     },
     [action, key]
   );
 }
+

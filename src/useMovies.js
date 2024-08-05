@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 const KEY = "d0f6fa16";
-export function useMovies() {
+export function useMovies(query) {
   const [movies, setMovies] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -37,7 +37,7 @@ export function useMovies() {
       return;
       // setWatched([])
     }
-    handleCloseMovie();
+    // handleCloseMovie();
     fetchMovies();
     return function () {
       controller.abort();
