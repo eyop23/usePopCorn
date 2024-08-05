@@ -1,17 +1,18 @@
 import { useState, useEffect, useRef } from "react";
 import { tempWatchedData, tempMovieData } from "./data/movieData.js";
 import StarRating from "./StarRating.js";
-import { useKey } from "./useKey.js";
-import { useLocalStorage } from "./useLocalStorage.js";
-import { useMovies } from "./useMovies.js";
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 // const KEY = "d0f6fa16";
 export default function App() {
+  const [movies, setMovies] = useState([]);
   const [query, setQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const [selectedId, setSelectedId] = useState(null);
-  const [watched, setWatched] = useLocalStorage([], watched);
-  const { movies, isLoading, error } = useMovies(query);
+  const [watched, setWatched] = useState(() =>
+    JSON.parse(localStorage.getItem("watched"))
+  );
 
   function handleSelectMovie(id) {
     setSelectedId((selectedId) => (id === selectedId ? null : id));
@@ -21,10 +22,61 @@ export default function App() {
   }
   function handleAddWatched(movie) {
     setWatched((watched) => [...watched, movie]);
+    // localStorage.setItem("watched", JSON.stringify([...watched, movie]));
   }
   function handleDeleteWatched(id) {
     setWatched((watched) => watched.filter((movie) => movie.imdbID !== id));
   }
+  useEffect(() => {
+    const wm = localStorage.getItem("watched");
+    if (wm) {
+      setWatched(JSON.parse(wm));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("watched", JSON.stringify(watched));
+  }, [watched]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const fetchMovies = async () => {
+      try {
+        setIsLoading(true);
+        setError("");
+        const response = await fetch(
+          `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`,
+          { signal: controller.signal }
+        );
+        if (!response.ok)
+          throw new Error("Something Were Wrong With fetching movies");
+        const data = await response.json();
+        if (data.Response === "False") throw new Error("Moive Not found");
+        console.log(data.Search);
+        setMovies(data.Search);
+        setError("");
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          setError(err.message);
+        }
+        // setIsLoading(false)
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    if (query.length < 3) {
+      setMovies([]);
+      setError("");
+      return;
+      // setWatched([])
+    }
+    handleCloseMovie();
+    fetchMovies();
+    return function () {
+      controller.abort();
+    };
+  }, [query]);
 
   return (
     <>
@@ -88,23 +140,18 @@ function Logo() {
 }
 function Search({ query, setQuery }) {
   const inputEl = useRef(null);
-  useKey("Enter", function () {
-    if (document.activeElement === inputEl.current) return;
-    inputEl.current.focus();
-    setQuery("");
-  });
-  //   useEffect(() => {
-  //     function callback(e) {
-  //       console.log(`current dom elment...${inputEl.current}`);
-  //       if (document.activeElement === inputEl.current) return;
-  //       if (e.code === "Enter") {
-  //         inputEl.current.focus();
-  //         setQuery("");
-  //       }
-  //     }
-  //     document.addEventListener("keydown", callback);
-  //     return () => document.addEventListener("keydown", callback);
-  //   }, [setQuery]);
+  useEffect(() => {
+    function callback(e) {
+      console.log(`current dom elment...${inputEl.current}`);
+      if (document.activeElement === inputEl.current) return;
+      if (e.code === "Enter") {
+        inputEl.current.focus();
+        setQuery("");
+      }
+    }
+    document.addEventListener("keydown", callback);
+    return () => document.addEventListener("keydown", callback);
+  }, [setQuery]);
   return (
     <input
       className="search"
@@ -135,6 +182,27 @@ function Box({ children }) {
     </div>
   );
 }
+// function WatchedMovies() {
+//   const [watched, setWatched] = useState(tempWatchedData);
+//   const [isOpen2, setIsOpen2] = useState(true);
+
+//   return (
+//     <div className="box">
+//       <button
+//         className="btn-toggle"
+//         onClick={() => setIsOpen2((open) => !open)}
+//       >
+//         {isOpen2 ? "–" : "+"}
+//       </button>
+//       {isOpen2 && (
+//         <>
+//           <MovieSummary watched={watched} />
+//           <WatchedMoviesList watched={watched} />
+//         </>
+//       )}
+//     </div>
+//   );
+// }
 function MovieList({ movies, onSelectMovie }) {
   return (
     <ul className="list list-movies">
@@ -198,20 +266,22 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
 
     onAddWatched(newWatchedMovie);
     onCloseMovie();
+
+    // setAvgRating(Number(imdbRating));
+    // setAvgRating((avgRating) => (avgRating + userRating) / 2);
   }
-  useKey("Escape", onCloseMovie);
-  //   useEffect(
-  //     function () {
-  //       function callback(e) {
-  //         if (e.code === "Escape") {
-  //           onCloseMovie();
-  //         }
-  //       }
-  //       document.addEventListener("keydown", callback);
-  //       return () => document.removeEventListener("keydown", callback);
-  //     },
-  //     [onCloseMovie]
-  //   );
+  useEffect(
+    function () {
+      function callback(e) {
+        if (e.code === "Escape") {
+          onCloseMovie();
+        }
+      }
+      document.addEventListener("keydown", callback);
+      return () => document.removeEventListener("keydown", callback);
+    },
+    [onCloseMovie]
+  );
   useEffect(() => {
     async function getMovieDetails() {
       setIsLoading(true);
@@ -232,6 +302,10 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
 
       return function () {
         document.title = "usePopcorn";
+        // console.log(`Clean up effect for movie ${title}`);
+        // this is clean up function it execute b/n rerenders
+        // clean up function executed in two cases
+        //  1)before the effect is executed again 2)after a component has unmounted(which is destroyed  )
       };
     },
     [title]
@@ -293,6 +367,14 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
       )}
     </div>
   );
+  // return (
+  //   <div className="details">
+  //     <button className="btn-back" onClick={onCloseMovie}>
+  //       &larr;
+  //     </button>
+  //     {selectedId}
+  //   </div>
+  // );
 }
 
 function MovieSummary({ watched }) {
@@ -337,6 +419,7 @@ function WatchedMoviesList({ watched, onDeleteWatched }) {
   );
 }
 function WatchedMovie({ movie, onDeleteWatched }) {
+  // localStorage.getItem("watched");
   return (
     <li>
       <img src={movie.poster} alt={`${movie.title} poster`} />
