@@ -11,7 +11,8 @@ export function useMovies(query) {
         setIsLoading(true);
         setError("");
         const response = await fetch(
-          `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`,
+          `https://cors-anywhere.herokuapp.com/http://www.omdbapi.com/?apikey=${KEY}&s=${query}`,
+          // `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`,
           { signal: controller.signal }
         );
         if (!response.ok)

@@ -50,24 +50,13 @@ export function MovieDetails({
     onCloseMovie();
   }
   useKey("Escape", onCloseMovie);
-  // useEffect(
-  //   function () {
-  //     function callback(e) {
-  //       console.log(e.code);
-  //       if (e.code === "Escape") {
-  //         onCloseMovie();
-  //       }
-  //     }
-  //     document.addEventListener("keydown", callback);
-  //     return () => document.removeEventListener("keydown", callback);
-  //   },
-  //   [onCloseMovie]
-  // );
+
   useEffect(() => {
     async function getMovieDetails() {
       setIsLoading(true);
       const res = await fetch(
-        `http://www.omdbapi.com/?apikey=${KEY}&i=${selectedId}`
+        `https://cors-anywhere.herokuapp.com/http://www.omdbapi.com/?apikey=${KEY}&i=${selectedId}`
+        // `http://www.omdbapi.com/?apikey=${KEY}&i=${selectedId}`
       );
       const data = await res.json();
       setMovie(data);
