@@ -23,5 +23,3 @@ jobs:
         run: npm run build
       - name: Deploying the Project
         run: npm run deploy
-        env:
-          VERCEL_TOKEN: ${{secrets.VERCEL_TOKEN}}
