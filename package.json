@@ -15,7 +15,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "deploy": "vercel --prod --confirm",
+    "deploy": "vercel --prod --yes",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
