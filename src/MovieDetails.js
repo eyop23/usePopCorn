@@ -55,8 +55,8 @@ export function MovieDetails({
     async function getMovieDetails() {
       setIsLoading(true);
       const res = await fetch(
-        `https://cors-anywhere.herokuapp.com/http://www.omdbapi.com/?apikey=${KEY}&i=${selectedId}`
-        // `http://www.omdbapi.com/?apikey=${KEY}&i=${selectedId}`
+        // `https://cors-anywhere.herokuapp.com/http://www.omdbapi.com/?apikey=${KEY}&i=${selectedId}`
+        `http://www.omdbapi.com/?apikey=${KEY}&i=${selectedId}`
       );
       const data = await res.json();
       setMovie(data);
